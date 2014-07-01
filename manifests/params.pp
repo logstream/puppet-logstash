@@ -31,6 +31,9 @@ class logstash::params {
 
   #### Default values for the parameters of the main module class, init.pp
 
+  # local file mode (for development)
+  $local_file_mode = false
+
   # ensure
   $ensure = 'present'
 
@@ -91,6 +94,7 @@ class logstash::params {
       $package_dir = '/var/lib/logstash/swdl'
       $installpath = '/opt/logstash'
       $plugin = '/opt/logstash/bin/plugin'
+      $local_log_dir = '/opt/logstash/samples'
     }
     'Darwin': {
       $configdir = '/Library/Application Support/Logstash'
