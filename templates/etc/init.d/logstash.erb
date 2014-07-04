@@ -37,7 +37,6 @@ LS_CONF_DIR=/etc/logstash/conf.d
 LS_OPEN_FILES=16384
 LS_NICE=19
 LS_OPTS=""
-GEM_HOME=/opt/logstash/vendor/bundle/jruby/1.9/
 
 [ -r /etc/default/$name ] && . /etc/default/$name
 [ -r /etc/sysconfig/$name ] && . /etc/sysconfig/$name
@@ -59,7 +58,7 @@ start() {
   nice -n ${LS_NICE} chroot --userspec $LS_USER:$LS_GROUP / sh -c "
     cd $LS_HOME
     ulimit -n ${LS_OPEN_FILES}
-    exec \"GEM_HOME=$GEM_HOME $program\" $args
+    exec \"$program\" $args
   " > "${LS_LOG_DIR}/$name.stdout" 2> "${LS_LOG_DIR}/$name.err" &
 
   # Generate the pidfile from here. If we instead made the forked process
