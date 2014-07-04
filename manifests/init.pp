@@ -173,7 +173,7 @@ class logstash(
   $service_provider    = 'init',
   $init_defaults       = undef,
   $init_defaults_file  = undef,
-  $init_template       = undef,
+  $init_template       = $logstash::params::init_template,
   $manage_repo         = false,
   $repo_version        = false,
   $install_contrib     = false,

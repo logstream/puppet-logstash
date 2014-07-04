@@ -135,6 +135,7 @@ class logstash::params {
       $service_pattern    = $service_name
       $service_providers  = [ 'init' ]
       $defaults_location  = '/etc/sysconfig'
+      $init_template      = 'logstash/etc/init.d/logstash.RedHat.erb'
     }
     'Debian', 'Ubuntu': {
       $service_name       = 'logstash'
@@ -143,6 +144,7 @@ class logstash::params {
       $service_pattern    = $service_name
       $service_providers  = [ 'init' ]
       $defaults_location  = '/etc/default'
+      $init_template      = 'logstash/etc/init.d/logstash.erb'
     }
     'Darwin': {
       $service_name       = 'net.logstash'
