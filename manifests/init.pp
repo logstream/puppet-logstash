@@ -151,6 +151,8 @@
 # * Richard Pijnenburg <mailto:richard.pijnenburg@elasticsearch.com>
 #
 class logstash(
+  $local_file_mode     = $logstash::params::local_file_mode,
+  $local_log_dir       = $logstash::params::local_log_dir,
   $ensure              = $logstash::params::ensure,
   $status              = $logstash::params::status,
   $restart_on_change   = $logstash::params::restart_on_change,
@@ -171,7 +173,7 @@ class logstash(
   $service_provider    = 'init',
   $init_defaults       = undef,
   $init_defaults_file  = undef,
-  $init_template       = undef,
+  $init_template       = $logstash::params::init_template,
   $manage_repo         = false,
   $repo_version        = false,
   $install_contrib     = false,
@@ -222,6 +224,15 @@ class logstash(
   }
 
   #### Manage actions
+
+  user { "$logstash_user":
+    ensure => present,
+    comment => "logstash user",
+    password => "!!",
+    groups => ["$logstash_group"],
+    shell => "/bin/bash",
+    managehome => false,
+  }
 
   # package(s)
   class { 'logstash::package': }

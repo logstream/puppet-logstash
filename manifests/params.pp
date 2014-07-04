@@ -31,6 +31,9 @@ class logstash::params {
 
   #### Default values for the parameters of the main module class, init.pp
 
+  # local file mode (for development)
+  $local_file_mode = false
+
   # ensure
   $ensure = 'present'
 
@@ -91,6 +94,7 @@ class logstash::params {
       $package_dir = '/var/lib/logstash/swdl'
       $installpath = '/opt/logstash'
       $plugin = '/opt/logstash/bin/plugin'
+      $local_log_dir = '/opt/logstash/samples'
     }
     'Darwin': {
       $configdir = '/Library/Application Support/Logstash'
@@ -131,6 +135,7 @@ class logstash::params {
       $service_pattern    = $service_name
       $service_providers  = [ 'init' ]
       $defaults_location  = '/etc/sysconfig'
+      $init_template      = 'logstash/etc/init.d/logstash.RedHat.erb'
     }
     'Debian', 'Ubuntu': {
       $service_name       = 'logstash'
@@ -139,6 +144,7 @@ class logstash::params {
       $service_pattern    = $service_name
       $service_providers  = [ 'init' ]
       $defaults_location  = '/etc/default'
+      $init_template      = 'logstash/etc/init.d/logstash.erb'
     }
     'Darwin': {
       $service_name       = 'net.logstash'

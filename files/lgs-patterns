@@ -1,0 +1,50 @@
+##############################################
+# LogStream specific grok patterns
+##############################################
+
+COMMON_SYSLOG_RAW_WITH_TOKENID %{UUID:tokenid}
+
+# Syslog with tokenid embedded
+#
+#   A syslog line as below:
+#     63645cad-9fea-48ab-9f4e-b5037b1ee2da AY1312052245256610e7Z box.unix.CRON[32473]: pam_unix(cron:session): session opened for user root by (uid=0)
+#   It's parsed to the following metadata set:
+#     tokenid: 63645cad-9fea-48ab-9f4e-b5037b1ee2da
+#     logsource: AY1312052245256610e7Z
+#     program: box.unix.CRON
+#     pid: 32473
+#
+COMMON_SYSLOG_HEADER (?:%{SYSLOGFACILITY} )?%{SYSLOGHOST:logsource} %{SYSLOGPROG}:
+
+# Web.apache with tokenid embedded
+#
+#   A web.apache.access log line as below:
+#     d8932704-e935-11e3-a73f-82687f4fc15c AY1312052245256610e7Z web.apache:64.242.88.10 - - [07/Mar/2004:16:10:02 -0800] "GET /mailman/listinfo/hsdivision HTTP/1.1" 200 6291
+#   It's parsed to the following metadata:
+#     tokenid: d8932704-e935-11e3-a73f-82687f4fc15c
+#     logsource: AY1312052245256610e7Z
+#     program: web.apache
+#     clientip: 64.242.88.10
+#     timestamp: 07/Mar/2004:16:10:02 -0800
+#     verb: GET
+#     request: /mailman/listinfo/hsdivision
+#     httpversion: 1.1
+#     response: 200
+#     bytes: 6291
+#
+WEB_APACHE_LOG %{IPORHOST:clientip} %{USER:ident} %{USER:auth} \[%{HTTPDATE:timestamp}\] "(?:%{WORD:verb} %{NOTSPACE:request}(?: HTTP/%{NUMBER:httpversion})?|%{DATA:rawrequest})" %{NUMBER:response} (?:%{NUMBER:bytes}|-)
+
+# app.java with tokenid
+#
+#   A app.java log line as below:
+#     d8932704-e935-11e3-a73f-82687f4fc15c AY1312052245256610e7Z app.java:2014-03-17 02:07:17.837 GMT ERROR edgeVseMonitoringThread InventoryUtils:392 - Failed to discover the vm : 'null' using vcUuId = '500500e1-db9a-8f85-adcd-b09705ebaa51'
+#   It's parsed to the following metadata:
+#     tokenid: d8932704-e935-11e3-a73f-82687f4fc15c
+#     logsource: AY1312052245256610e7Z
+#     program: app.java
+#     timestamp: 2014-03-17 02:07:17.837 GMT
+#
+TIMESTAMP_GMT %{YEAR}-%{MONTHNUM}-%{MONTHDAY}[T ]%{HOUR}:?%{MINUTE}(?::?%{SECOND})? (GMT)
+APP_JAVA_LOG %{TIMESTAMP_GMT:timestamp}
+
+

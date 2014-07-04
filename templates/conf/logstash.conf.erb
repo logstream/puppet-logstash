@@ -1,0 +1,143 @@
+input {
+    tcp {
+        port => 10000
+        mode => "server"
+        ssl_enable => false
+        type => "syslog"
+        add_field => {
+            lgs_mode => "tokenid"
+            westlake_mode => "false"
+        }
+    }
+
+    <% if scope.lookupvar('logstash::params::local_file_mode') == 'yes' %>
+    # Use file input plugin for debug purpose
+    file {
+      codec => plain
+      path => "<%= scope.lookupvar('logstash::params::local_log_dir') %>"
+      start_position => "beginning"
+      type => "syslog"
+      add_field => {
+        lgs_mode => "tokenid"
+        westlake_mode => "true"
+      }
+    }
+    <% end %>
+}
+
+filter {
+  # Drop useless events
+  if [message] =~ "^\s*$" {
+    drop {}
+  }
+
+  # Classify the log type
+  if [lgs_mode] == 'tokenid' {
+    # match tokenid
+    grok {
+      match => {  "message" => "%{COMMON_SYSLOG_RAW_WITH_TOKENID} %{GREEDYDATA:message}" }
+      overwrite => [ "message" ]
+    }
+    if ("_grokparsefailure" in [tags]) {
+      # No tokenid found. Drop the unknown event
+      drop {}
+    }
+
+    # match the syslog pattern
+    grok {
+      match => {  "message" => "%{COMMON_SYSLOG_HEADER}%{GREEDYDATA:log_message}" }
+    }
+    if !("_grokparsefailure" in [tags]) {
+      mutate { add_tag => [ 'syslog_header' ] }
+
+      # Match syslog header successfully. Try to classify the sub-type
+      if [program] == 'web.apache' {
+        grok {
+          match => { "log_message" => "%{WEB_APACHE_LOG}" }
+        }
+      } else if [program] == 'app.java' {
+        grok {
+          match => { "log_message" => "%{APP_JAVA_LOG}" }
+        }
+        multiline {
+          pattern => "^%{COMMON_SYSLOG_HEADER}%{TIMESTAMP_GMT}"
+          negate => true
+          what => "previous"
+          stream_identity => "%{logsource}.%{@type}"
+        }
+      }
+      if ("_grokparsefailure" in [tags]) {
+        mutate {
+          remove_tag => [ '_grokparsefailure' ]
+        }
+      }
+    } else {
+      mutate {
+        remove_tag => [ '_grokparsefailure' ]
+      }
+    }
+
+    # Grab the key-value pairs
+    # In classification phase, we should parse out the message_payload which is
+    # then used here to analyze the key-value pairs rather than the "message" line
+    kv {
+        source => "message"
+        target => "kv_data"
+        trim => "<>\[\],;:\(\)"
+        trimkey => "<>\[\],;\(\)"
+        value_split => "=:"
+    }
+  } else {
+    drop {}
+  }
+}
+
+output {
+  if [westlake_mode] == "true" {
+    #
+    # For development mode
+    # Forward the events to westlake directly
+    #
+    elasticsearch {
+      action => "index"
+      bind_host => "localhost"
+      protocol => "http"
+      cluster => "westlake.cluster.sandbox"
+      node_name => "westlake.node.sandbox.0"
+      codec => "plain"
+      flush_size => 20
+      idle_flush_time => 1
+      index => "westlake"
+      index_type => "%{type}"
+    }
+  }
+
+  else {
+
+  #
+  # forward the events to yangtze via kafka message queue
+  #
+  kafka {
+    broker_list => "localhost:9092"         # string (optional), default: "localhost:9092"
+    topic_id => "topic.tuotuo"   # string (optional), default: "test"
+    compression_codec => "none"             # string (optional), one of ["none", "gzip", "snappy"], default: "none"
+    compressed_topics => ""                 # string (optional), default: ""
+    request_required_acks => 0              # number (optional), one of [-1, 0, 1], default: 0
+    serializer_class => "kafka.serializer.StringEncoder"      # string, (optional) default: "kafka.serializer.StringEncoder"
+    partitioner_class => "kafka.producer.DefaultPartitioner"  # string (optional) default: "kafka.producer.DefaultPartitioner"
+    request_timeout_ms => 10000             # number (optional) default: 10000
+    producer_type => "async"                # string (optional), one of ["sync", "async"] default => 'sync'
+    message_send_max_retries => 3           # number (optional) default: 3
+    retry_backoff_ms => 100                 # number (optional) default: 100
+    topic_metadata_refresh_interval_ms => 600000              # number (optional) default: 600 * 1000
+    queue_buffering_max_ms => 5000          # number (optional) default: 5000
+    queue_buffering_max_messages => 10000   # number (optional) default: 10000
+    queue_enqueue_timeout_ms => 10000       # number (optional) default: -1
+    batch_num_messages => 100               # number (optional) default: 200
+    send_buffer_bytes => 102400             # number (optional) default: 100 * 1024
+    client_id => "logstash"                 # string (optional) default: ""
+  }
+  }
+
+
+}
