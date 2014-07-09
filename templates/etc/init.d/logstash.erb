@@ -45,7 +45,10 @@ program=/opt/logstash/bin/logstash
 args="agent -f ${LS_CONF_DIR} -l ${LS_LOG_FILE} ${LS_OPTS}"
 
 start() {
-
+  if [ ! -d $LS_LOG_DIR ]; then
+    mkdir -p $LS_LOG_DIR
+    chown $LS_USER:$LS_GROUP $LS_LOG_DIR
+  fi
 
   JAVA_OPTS=${LS_JAVA_OPTS}
   HOME=${LS_HOME}
