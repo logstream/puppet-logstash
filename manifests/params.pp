@@ -91,7 +91,7 @@ class logstash::params {
   case $::kernel {
     'Linux': {
       $configdir = '/etc/logstash'
-      $package_dir = '/var/lib/logstash/swdl'
+      $package_dir = '/opt/logstash/swdl'
       $installpath = '/opt/logstash'
       $plugin = '/opt/logstash/bin/plugin'
       $local_log_dir = '/opt/logstash/samples'
